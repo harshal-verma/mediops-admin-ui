@@ -10,33 +10,174 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminLoginRouteImport } from './routes/admin/login'
+import { Route as AdminShellRouteImport } from './routes/admin/_shell'
+import { Route as AdminShellUsersRouteImport } from './routes/admin/_shell/users'
+import { Route as AdminShellSettingsRouteImport } from './routes/admin/_shell/settings'
+import { Route as AdminShellDashboardRouteImport } from './routes/admin/_shell/dashboard'
+import { Route as AdminShellAuditLogsRouteImport } from './routes/admin/_shell/audit-logs'
+import { Route as AdminShellPackagesIndexRouteImport } from './routes/admin/_shell/packages/index'
+import { Route as AdminShellHospitalsIndexRouteImport } from './routes/admin/_shell/hospitals/index'
+import { Route as AdminShellPackagesCreateRouteImport } from './routes/admin/_shell/packages/create'
+import { Route as AdminShellHospitalsCreateRouteImport } from './routes/admin/_shell/hospitals/create'
+import { Route as AdminShellHospitalsIdRouteImport } from './routes/admin/_shell/hospitals/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminShellRoute = AdminShellRouteImport.update({
+  id: '/admin/_shell',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminShellUsersRoute = AdminShellUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminShellRoute,
+} as any)
+const AdminShellSettingsRoute = AdminShellSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminShellRoute,
+} as any)
+const AdminShellDashboardRoute = AdminShellDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AdminShellRoute,
+} as any)
+const AdminShellAuditLogsRoute = AdminShellAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
+  getParentRoute: () => AdminShellRoute,
+} as any)
+const AdminShellPackagesIndexRoute = AdminShellPackagesIndexRouteImport.update({
+  id: '/packages/',
+  path: '/packages/',
+  getParentRoute: () => AdminShellRoute,
+} as any)
+const AdminShellHospitalsIndexRoute =
+  AdminShellHospitalsIndexRouteImport.update({
+    id: '/hospitals/',
+    path: '/hospitals/',
+    getParentRoute: () => AdminShellRoute,
+  } as any)
+const AdminShellPackagesCreateRoute =
+  AdminShellPackagesCreateRouteImport.update({
+    id: '/packages/create',
+    path: '/packages/create',
+    getParentRoute: () => AdminShellRoute,
+  } as any)
+const AdminShellHospitalsCreateRoute =
+  AdminShellHospitalsCreateRouteImport.update({
+    id: '/hospitals/create',
+    path: '/hospitals/create',
+    getParentRoute: () => AdminShellRoute,
+  } as any)
+const AdminShellHospitalsIdRoute = AdminShellHospitalsIdRouteImport.update({
+  id: '/hospitals/$id',
+  path: '/hospitals/$id',
+  getParentRoute: () => AdminShellRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminShellRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/audit-logs': typeof AdminShellAuditLogsRoute
+  '/admin/dashboard': typeof AdminShellDashboardRoute
+  '/admin/settings': typeof AdminShellSettingsRoute
+  '/admin/users': typeof AdminShellUsersRoute
+  '/admin/hospitals/$id': typeof AdminShellHospitalsIdRoute
+  '/admin/hospitals/create': typeof AdminShellHospitalsCreateRoute
+  '/admin/packages/create': typeof AdminShellPackagesCreateRoute
+  '/admin/hospitals/': typeof AdminShellHospitalsIndexRoute
+  '/admin/packages/': typeof AdminShellPackagesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminShellRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/audit-logs': typeof AdminShellAuditLogsRoute
+  '/admin/dashboard': typeof AdminShellDashboardRoute
+  '/admin/settings': typeof AdminShellSettingsRoute
+  '/admin/users': typeof AdminShellUsersRoute
+  '/admin/hospitals/$id': typeof AdminShellHospitalsIdRoute
+  '/admin/hospitals/create': typeof AdminShellHospitalsCreateRoute
+  '/admin/packages/create': typeof AdminShellPackagesCreateRoute
+  '/admin/hospitals': typeof AdminShellHospitalsIndexRoute
+  '/admin/packages': typeof AdminShellPackagesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin/_shell': typeof AdminShellRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/_shell/audit-logs': typeof AdminShellAuditLogsRoute
+  '/admin/_shell/dashboard': typeof AdminShellDashboardRoute
+  '/admin/_shell/settings': typeof AdminShellSettingsRoute
+  '/admin/_shell/users': typeof AdminShellUsersRoute
+  '/admin/_shell/hospitals/$id': typeof AdminShellHospitalsIdRoute
+  '/admin/_shell/hospitals/create': typeof AdminShellHospitalsCreateRoute
+  '/admin/_shell/packages/create': typeof AdminShellPackagesCreateRoute
+  '/admin/_shell/hospitals/': typeof AdminShellHospitalsIndexRoute
+  '/admin/_shell/packages/': typeof AdminShellPackagesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/admin/login'
+    | '/admin/audit-logs'
+    | '/admin/dashboard'
+    | '/admin/settings'
+    | '/admin/users'
+    | '/admin/hospitals/$id'
+    | '/admin/hospitals/create'
+    | '/admin/packages/create'
+    | '/admin/hospitals/'
+    | '/admin/packages/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/admin/login'
+    | '/admin/audit-logs'
+    | '/admin/dashboard'
+    | '/admin/settings'
+    | '/admin/users'
+    | '/admin/hospitals/$id'
+    | '/admin/hospitals/create'
+    | '/admin/packages/create'
+    | '/admin/hospitals'
+    | '/admin/packages'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin/_shell'
+    | '/admin/login'
+    | '/admin/_shell/audit-logs'
+    | '/admin/_shell/dashboard'
+    | '/admin/_shell/settings'
+    | '/admin/_shell/users'
+    | '/admin/_shell/hospitals/$id'
+    | '/admin/_shell/hospitals/create'
+    | '/admin/_shell/packages/create'
+    | '/admin/_shell/hospitals/'
+    | '/admin/_shell/packages/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminShellRoute: typeof AdminShellRouteWithChildren
+  AdminLoginRoute: typeof AdminLoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +189,119 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/_shell': {
+      id: '/admin/_shell'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminShellRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/_shell/users': {
+      id: '/admin/_shell/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminShellUsersRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/settings': {
+      id: '/admin/_shell/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminShellSettingsRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/dashboard': {
+      id: '/admin/_shell/dashboard'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminShellDashboardRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/audit-logs': {
+      id: '/admin/_shell/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/admin/audit-logs'
+      preLoaderRoute: typeof AdminShellAuditLogsRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/packages/': {
+      id: '/admin/_shell/packages/'
+      path: '/packages'
+      fullPath: '/admin/packages/'
+      preLoaderRoute: typeof AdminShellPackagesIndexRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/hospitals/': {
+      id: '/admin/_shell/hospitals/'
+      path: '/hospitals'
+      fullPath: '/admin/hospitals/'
+      preLoaderRoute: typeof AdminShellHospitalsIndexRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/packages/create': {
+      id: '/admin/_shell/packages/create'
+      path: '/packages/create'
+      fullPath: '/admin/packages/create'
+      preLoaderRoute: typeof AdminShellPackagesCreateRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/hospitals/create': {
+      id: '/admin/_shell/hospitals/create'
+      path: '/hospitals/create'
+      fullPath: '/admin/hospitals/create'
+      preLoaderRoute: typeof AdminShellHospitalsCreateRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/hospitals/$id': {
+      id: '/admin/_shell/hospitals/$id'
+      path: '/hospitals/$id'
+      fullPath: '/admin/hospitals/$id'
+      preLoaderRoute: typeof AdminShellHospitalsIdRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
   }
 }
 
+interface AdminShellRouteChildren {
+  AdminShellAuditLogsRoute: typeof AdminShellAuditLogsRoute
+  AdminShellDashboardRoute: typeof AdminShellDashboardRoute
+  AdminShellSettingsRoute: typeof AdminShellSettingsRoute
+  AdminShellUsersRoute: typeof AdminShellUsersRoute
+  AdminShellHospitalsIdRoute: typeof AdminShellHospitalsIdRoute
+  AdminShellHospitalsCreateRoute: typeof AdminShellHospitalsCreateRoute
+  AdminShellPackagesCreateRoute: typeof AdminShellPackagesCreateRoute
+  AdminShellHospitalsIndexRoute: typeof AdminShellHospitalsIndexRoute
+  AdminShellPackagesIndexRoute: typeof AdminShellPackagesIndexRoute
+}
+
+const AdminShellRouteChildren: AdminShellRouteChildren = {
+  AdminShellAuditLogsRoute: AdminShellAuditLogsRoute,
+  AdminShellDashboardRoute: AdminShellDashboardRoute,
+  AdminShellSettingsRoute: AdminShellSettingsRoute,
+  AdminShellUsersRoute: AdminShellUsersRoute,
+  AdminShellHospitalsIdRoute: AdminShellHospitalsIdRoute,
+  AdminShellHospitalsCreateRoute: AdminShellHospitalsCreateRoute,
+  AdminShellPackagesCreateRoute: AdminShellPackagesCreateRoute,
+  AdminShellHospitalsIndexRoute: AdminShellHospitalsIndexRoute,
+  AdminShellPackagesIndexRoute: AdminShellPackagesIndexRoute,
+}
+
+const AdminShellRouteWithChildren = AdminShellRoute._addFileChildren(
+  AdminShellRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminShellRoute: AdminShellRouteWithChildren,
+  AdminLoginRoute: AdminLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
