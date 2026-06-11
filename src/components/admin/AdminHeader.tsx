@@ -5,6 +5,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 const titles: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
@@ -20,7 +22,19 @@ const titles: Record<string, string> = {
 export function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [_, setNotif] = useState(3);
+
+  const initials = (user?.email ?? "SA")
+    .split(/[@.]/)[0]
+    .slice(0, 2)
+    .toUpperCase();
+
+  async function handleLogout() {
+    await logout();
+    toast.success("Signed out");
+    navigate({ to: "/admin/login" });
+  }
 
   const crumbs = (() => {
     const parts = pathname.split("/").filter(Boolean); // ["admin", ...]
@@ -81,21 +95,21 @@ export function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg hover:bg-muted pl-1 pr-2 py-1">
             <div className="size-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold">
-              SA
+              {initials}
             </div>
             <div className="hidden sm:block text-left leading-tight">
-              <div className="text-sm font-medium">Super Admin</div>
-              <div className="text-[11px] text-muted-foreground">admin@medi.io</div>
+              <div className="text-sm font-medium">{user?.role?.replace(/_/g, " ") ?? "Super Admin"}</div>
+              <div className="text-[11px] text-muted-foreground">{user?.email ?? "—"}</div>
             </div>
             <ChevronDown className="size-4 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Signed in as Super Admin</DropdownMenuLabel>
+            <DropdownMenuLabel>Signed in as {user?.email ?? "Admin"}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <User className="size-4" /> Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate({ to: "/admin/login" })}>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="size-4" /> Logout
             </DropdownMenuItem>
           </DropdownMenuContent>

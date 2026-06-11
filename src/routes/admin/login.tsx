@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Stethoscope, Mail, Lock, Shield, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
+import { ApiError } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/login")({
   head: () => ({
@@ -15,25 +17,36 @@ export const Route = createFileRoute("/admin/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("admin@medi.io");
-  const [password, setPassword] = useState("••••••••");
+  const { login, user, loading } = useAuth();
+  const [email, setEmail] = useState("admin@his.com");
+  const [password, setPassword] = useState("Admin@123");
   const [otp, setOtp] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  useEffect(() => {
+    if (!loading && user) navigate({ to: "/admin/dashboard" });
+  }, [loading, user, navigate]);
+
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!/^\S+@\S+\.\S+$/.test(email)) errs.email = "Enter a valid email address";
     if (!password || password.length < 4) errs.password = "Password is required";
-    if (otp.length !== 6 || !/^\d+$/.test(otp)) errs.otp = "Enter the 6-digit code from your authenticator";
     setErrors(errs);
     if (Object.keys(errs).length) return;
     setSubmitting(true);
-    setTimeout(() => {
-      toast.success("Welcome back, Super Admin");
+    try {
+      const u = await login(email, password);
+      toast.success(`Welcome back, ${u.email}`);
       navigate({ to: "/admin/dashboard" });
-    }, 600);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Login failed. Please try again.";
+      toast.error(message);
+      setErrors({ password: message });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -84,7 +97,7 @@ function LoginPage() {
               <Shield className="size-3.5" /> Super Admin Portal
             </div>
             <h1 className="font-display text-3xl font-bold mt-3">Sign in to continue</h1>
-            <p className="text-sm text-muted-foreground mt-1">Two-factor authentication is required for all admins.</p>
+            <p className="text-sm text-muted-foreground mt-1">Use your MediOps admin credentials.</p>
           </div>
 
           <Field label="Work email" icon={<Mail className="size-4" />} error={errors.email}>
@@ -95,7 +108,7 @@ function LoginPage() {
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-transparent outline-none text-sm" placeholder="••••••••" />
           </Field>
-          <Field label="2FA code" icon={<Shield className="size-4" />} error={errors.otp} hint="Open your authenticator app">
+          <Field label="2FA code (optional)" icon={<Shield className="size-4" />} hint="Skip if not enabled">
             <input value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
               inputMode="numeric" maxLength={6}
               className="w-full bg-transparent outline-none text-sm tracking-[0.5em] font-mono" placeholder="123456" />
@@ -106,7 +119,7 @@ function LoginPage() {
             disabled={submitting}
             className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-95 transition disabled:opacity-60"
           >
-            {submitting ? "Verifying…" : (<>Continue <ArrowRight className="size-4" /></>)}
+            {submitting ? "Signing in…" : (<>Continue <ArrowRight className="size-4" /></>)}
           </button>
 
           <p className="text-xs text-center text-muted-foreground">
