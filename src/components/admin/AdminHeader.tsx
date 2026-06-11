@@ -22,7 +22,19 @@ const titles: Record<string, string> = {
 export function AdminHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [_, setNotif] = useState(3);
+
+  const initials = (user?.email ?? "SA")
+    .split(/[@.]/)[0]
+    .slice(0, 2)
+    .toUpperCase();
+
+  async function handleLogout() {
+    await logout();
+    toast.success("Signed out");
+    navigate({ to: "/admin/login" });
+  }
 
   const crumbs = (() => {
     const parts = pathname.split("/").filter(Boolean); // ["admin", ...]
