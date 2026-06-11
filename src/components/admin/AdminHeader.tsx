@@ -5,6 +5,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 const titles: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
