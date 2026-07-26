@@ -2,7 +2,8 @@
 // Lightweight API client for the MediOps backend.
 // Handles bearer tokens, automatic refresh, and JSON parsing.
 
-export const API_BASE = "http://localhost:3000";
+// export const API_BASE = "http://localhost:3000";
+export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
 const ACCESS_KEY = "medi.accessToken";
 const REFRESH_KEY = "medi.refreshToken";
