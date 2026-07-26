@@ -1,7 +1,9 @@
 import { cn } from "@/lib/utils";
-import type { HospitalStatus } from "@/data/dummy";
 
-export function StatusBadge({ status, className }: { status: HospitalStatus | string; className?: string }) {
+/** Display-level status labels (distinct from the backend's DRAFT/ACTIVE/SUSPENDED enum). */
+export type BadgeStatus = "Active" | "Trial" | "Expired" | "Suspended" | "Disabled";
+
+export function StatusBadge({ status, className }: { status: BadgeStatus | string; className?: string }) {
   const map: Record<string, string> = {
     Active: "bg-success/15 text-success-foreground ring-success/30",
     Trial: "bg-info/15 text-info-foreground ring-info/30",
@@ -35,7 +37,10 @@ export function PlanBadge({ plan }: { plan: string }) {
     ENTERPRISE: "bg-primary text-primary-foreground",
   };
   return (
-    <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wide", map[plan])}>
+    <span className={cn(
+      "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wide",
+      map[plan?.toUpperCase()] ?? "bg-muted text-muted-foreground",
+    )}>
       {plan}
     </span>
   );

@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { apiFetch, tokenStore, type AuthUser } from "./api";
 
@@ -38,14 +39,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("medi:auth", onChange);
   }, [refreshMe]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const data = await apiFetch<{ accessToken: string; refreshToken: string; user: AuthUser }>(
+const login = useCallback(async (email: string, password: string) => {
+    const data = await apiFetch<{ accessToken: string; refreshToken: string }>(
       "/api/auth/login",
       { method: "POST", auth: false, body: JSON.stringify({ email, password }) },
     );
-    tokenStore.set(data);
-    setUser(data.user);
-    return data.user;
+    const payload = JSON.parse(atob(data.accessToken.split('.')[1]));
+    const user: AuthUser = {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.roles?.[0] ?? payload.userType,
+    };
+    tokenStore.set({ ...data, user });
+    setUser(user);
+    return user;
   }, []);
 
   const logout = useCallback(async () => {

@@ -1,7 +1,8 @@
+/* eslint-disable prettier/prettier */
 // Lightweight API client for the MediOps backend.
 // Handles bearer tokens, automatic refresh, and JSON parsing.
 
-export const API_BASE = "https://tenant-management-ee8u.onrender.com";
+export const API_BASE = "http://localhost:3000";
 
 const ACCESS_KEY = "medi.accessToken";
 const REFRESH_KEY = "medi.refreshToken";
@@ -116,13 +117,12 @@ export async function apiFetch<T = unknown>(
   const json = text ? safeJson(text) : null;
 
   if (!res.ok) {
-    const message =
-      (json && (json.message || json.error)) || res.statusText || "Request failed";
+    const message = (json && (json.message || json.error)) || res.statusText || "Request failed";
     throw new ApiError(res.status, message, json);
   }
 
   if (raw) return json as T;
-  return ((json && "data" in json ? json.data : json) as T);
+  return (json && "data" in json ? json.data : json) as T;
 }
 
 function safeJson(text: string) {
@@ -131,4 +131,205 @@ function safeJson(text: string) {
   } catch {
     return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Domain types
+// ---------------------------------------------------------------------------
+
+export type HospitalStatus = "DRAFT" | "ACTIVE" | "SUSPENDED";
+
+export type AssignedPackage = {
+  id: number;
+  packageId: number;
+  startDate: string;
+  endDate: string | null;
+  status: "ACTIVE" | "EXPIRED" | "CANCELLED";
+  package: Package;
+};
+
+export type Hospital = {
+  id: number;
+  code: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  status: HospitalStatus;
+  /** Derived server-side from `status`; see TenantService.withIsActive. */
+  isActive: boolean;
+  activatedAt?: string | null;
+  createdAt: string;
+  /** Only present on list/detail reads — status mutations return the bare row. */
+  packages?: AssignedPackage[];
+};
+
+export type Package = {
+  id: number;
+  name: string;
+  description?: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  maxDoctors: number;
+  maxStorageGb: number;
+  maxBranches: number;
+  isPopular: boolean;
+  createdAt: string;
+  modules?: { module: CatalogModule }[];
+  _count?: { assignedPackages: number };
+};
+
+export type CatalogModule = {
+  id: number;
+  name: string;
+  description?: string;
+};
+
+export type AuditLog = {
+  id: number;
+  action: string;
+  actorId: string;
+  actorEmail: string;
+  targetType: string;
+  targetName: string;
+  detail?: string;
+  createdAt: string;
+};
+
+export type PlatformRole = "SUPER_ADMIN" | "PLATFORM_ADMIN" | "SUPPORT";
+
+/** Shape of PlatformUsersService.toPublicUser — name is pre-joined, status is a boolean. */
+export type PlatformUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: PlatformRole;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export type DashboardStats = {
+  totalHospitals: number;
+  activeHospitals: number;
+  totalRevenue: number;
+  revenueByMonth: { month: string; revenue: number }[];
+  hospitalHealthSnapshot: {
+    id: number;
+    name: string;
+    isActive: boolean;
+    packageName: string | null;
+  }[];
+  recentActivity: AuditLog[];
+};
+
+export type SearchResults = {
+  query: string;
+  results: {
+    hospitals: { id: number; name: string; isActive: boolean }[];
+    packages: { id: number; name: string; monthlyPrice: number }[];
+    users: { id: string; name: string; email: string; role: string }[];
+  };
+};
+
+export type AuditLogPage = {
+  data: AuditLog[];
+  total: number;
+  page: number;
+  limit: number;
+};
+
+// ---------------------------------------------------------------------------
+// Typed endpoints
+// ---------------------------------------------------------------------------
+
+export const api = {
+  hospitals: {
+    list: () => apiFetch<Hospital[]>("/api/hospitals"),
+    get: (id: number) => apiFetch<Hospital>(`/api/hospitals/${id}`),
+    create: (dto: { name: string; code: string; email: string; phone?: string }) =>
+      apiFetch<Hospital>("/api/hospitals", { method: "POST", body: JSON.stringify(dto) }),
+    assignPackage: (id: number, packageId: number) =>
+      apiFetch<Hospital>(`/api/hospitals/${id}/packages`, {
+        method: "POST",
+        body: JSON.stringify({ packageId, startDate: new Date().toISOString() }),
+      }),
+    activate: (id: number) =>
+      apiFetch<Hospital>(`/api/hospitals/${id}/activate`, { method: "POST" }),
+    suspend: (id: number) =>
+      apiFetch<Hospital>(`/api/hospitals/${id}/suspend`, { method: "POST" }),
+    reactivate: (id: number) =>
+      apiFetch<Hospital>(`/api/hospitals/${id}/reactivate`, { method: "POST" }),
+  },
+  packages: {
+    list: () => apiFetch<Package[]>("/api/packages"),
+    get: (id: number) => apiFetch<Package>(`/api/packages/${id}`),
+    create: (dto: Partial<Package>) =>
+      apiFetch<Package>("/api/packages", { method: "POST", body: JSON.stringify(dto) }),
+    update: (id: number, dto: Partial<Package>) =>
+      apiFetch<Package>(`/api/packages/${id}`, { method: "PATCH", body: JSON.stringify(dto) }),
+    delete: (id: number) => apiFetch<void>(`/api/packages/${id}`, { method: "DELETE" }),
+    attachModule: (packageId: number, moduleId: number) =>
+      apiFetch<void>(`/api/packages/${packageId}/modules/${moduleId}`, { method: "POST" }),
+  },
+  catalog: {
+    modules: () => apiFetch<CatalogModule[]>("/api/catalog/modules"),
+    features: () => apiFetch<unknown[]>("/api/catalog/features"),
+  },
+  auditLogs: {
+    list: (params?: { page?: number; limit?: number; action?: string; actorEmail?: string }) => {
+      const q = new URLSearchParams();
+      if (params?.page) q.set("page", String(params.page));
+      if (params?.limit) q.set("limit", String(params.limit));
+      if (params?.action) q.set("action", params.action);
+      if (params?.actorEmail) q.set("actorEmail", params.actorEmail);
+      // This endpoint's envelope IS the payload ({ data, total, page, limit }),
+      // so bypass apiFetch's `data` unwrapping or we'd get the bare array back.
+      return apiFetch<AuditLogPage>(`/api/audit-logs?${q}`, { raw: true });
+    },
+  },
+  dashboard: {
+    stats: () => apiFetch<DashboardStats>("/api/dashboard/stats"),
+  },
+  platformUsers: {
+    list: (role?: string) => {
+      const q = role ? `?role=${role}` : "";
+      return apiFetch<PlatformUser[]>(`/api/platform-users${q}`);
+    },
+    disable: (id: string) =>
+      apiFetch<void>(`/api/platform-users/${id}/disable`, { method: "POST" }),
+    enable: (id: string) => apiFetch<void>(`/api/platform-users/${id}/enable`, { method: "POST" }),
+    resetPassword: (id: string, newPassword: string) =>
+      apiFetch<{ message: string }>(`/api/platform-users/${id}/reset-password`, {
+        method: "POST",
+        body: JSON.stringify({ newPassword }),
+      }),
+  },
+  search: {
+    query: (q: string) => apiFetch<SearchResults>(`/api/search?q=${encodeURIComponent(q)}`),
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Shared formatting helpers
+// ---------------------------------------------------------------------------
+
+/** "2h ago", "3d ago" — coarse relative time for audit/activity feeds. */
+export function timeAgo(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "—";
+  const secs = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (secs < 60) return "just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
+
+/** ₹1,45,000 — Indian digit grouping, no decimals. */
+export function formatINR(value: number): string {
+  return `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value ?? 0)}`;
 }

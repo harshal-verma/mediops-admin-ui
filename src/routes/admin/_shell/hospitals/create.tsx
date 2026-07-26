@@ -1,7 +1,8 @@
+/* eslint-disable prettier/prettier */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import { packages } from "@/data/dummy";
+import { useState, useEffect } from "react";
+import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { api, formatINR, type Package } from "@/lib/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/_shell/hospitals/create")({
@@ -9,52 +10,105 @@ export const Route = createFileRoute("/admin/_shell/hospitals/create")({
   component: CreateHospital,
 });
 
-const steps = ["Hospital info", "Assign package", "Admin account"];
+const steps = ["Hospital info", "Assign package"];
+
+/** Phone is free-form, but restricted to the characters real numbers are written with. */
+const PHONE_PATTERN = /^[+\d\s\-()]*$/;
+const PHONE_ERROR = "Invalid phone number";
+
+/** "Kanishka Hospital" → "KANISHKA-H". Seeds the code field; still hand-editable. */
+function autoGenerateCode(name: string): string {
+  return name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 10);
+}
 
 function CreateHospital() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState({
-    name: "", address: "", city: "", state: "", phone: "", email: "",
-    packageId: "p3",
-    contactPerson: "", adminEmail: "", autoPassword: true,
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [form, setForm] = useState<{
+    name: string;
+    code: string;
+    email: string;
+    phone: string;
+    packageId: number | null;
+  }>({
+    name: "",
+    code: "",
+    email: "",
+    phone: "",
+    packageId: null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (step === 1) {
+      setLoadingPackages(true);
+      api.packages
+        .list()
+        .then(setPackages)
+        .catch((e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to load packages"))
+        .finally(() => setLoadingPackages(false));
+    }
+  }, [step]);
 
   function validate(): boolean {
     const e: Record<string, string> = {};
     if (step === 0) {
-      if (!form.name) e.name = "Hospital name required";
-      if (!form.city) e.city = "City required";
-      if (!form.phone) e.phone = "Phone required";
+      if (!form.name.trim()) e.name = "Hospital name required";
+      if (!form.code.trim()) e.code = "Hospital code required";
       if (!/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Valid email required";
+      if (!PHONE_PATTERN.test(form.phone)) e.phone = PHONE_ERROR;
     }
-    if (step === 2) {
-      if (!form.contactPerson) e.contactPerson = "Contact person required";
-      if (!/^\S+@\S+\.\S+$/.test(form.adminEmail)) e.adminEmail = "Valid admin email required";
+    if (step === 1) {
+      if (form.packageId === null) e.packageId = "Select a package";
     }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
-  function next() { if (validate()) setStep((s) => Math.min(2, s + 1)); }
-  function submit() {
+  function next() { if (validate()) setStep((s) => Math.min(1, s + 1)); }
+
+  async function submit() {
     if (!validate()) return;
-    toast.success(`${form.name} created successfully`);
-    setTimeout(() => navigate({ to: "/admin/hospitals" }), 600);
+    setSubmitting(true);
+    try {
+      const hospital = await api.hospitals.create({
+        name: form.name.trim(),
+        code: form.code.trim().toUpperCase(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || undefined,
+      });
+
+      if (form.packageId !== null) {
+        await api.hospitals.assignPackage(hospital.id, form.packageId);
+      }
+
+      toast.success(`${hospital.name} created successfully`);
+      navigate({ to: "/admin/hospitals" });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to create hospital");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <Link to="/admin/hospitals" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-4" /> Back to hospitals
-        </Link>
-      </div>
+    <div className="space-y-6 max-w-3xl mx-auto">
+      <Link to="/admin/hospitals" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="size-4" /> Back to hospitals
+      </Link>
 
       <div>
         <h1 className="font-display text-2xl font-bold">Onboard a new hospital</h1>
-        <p className="text-sm text-muted-foreground">Provision a tenant in three quick steps.</p>
+        <p className="text-sm text-muted-foreground">Provision a tenant in two quick steps.</p>
       </div>
 
       <ol className="flex items-center gap-3">
@@ -75,53 +129,70 @@ function CreateHospital() {
       <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
         {step === 0 && (
           <div className="grid gap-4 md:grid-cols-2">
-            <Input label="Hospital name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} error={errors.name} />
-            <Input label="Phone" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} error={errors.phone} />
-            <Input label="Email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} error={errors.email} />
-            <Input label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} error={errors.city} />
-            <Input label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} />
-            <Input className="md:col-span-2" label="Address" value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
+            <Field label="Hospital name *" error={errors.name}>
+              <input
+                value={form.name}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    name: e.target.value.toUpperCase(),
+                    code: autoGenerateCode(e.target.value),
+                  })
+                }
+                placeholder="e.g. AIIMS DELHI" className="input" />
+            </Field>
+            <Field label="Hospital code *" error={errors.code}>
+              <input
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                placeholder="e.g. ABC-HOSP"
+                className="input"
+              />
+            </Field>
+            <Field label="Email *" error={errors.email}>
+              <input type="email" value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="admin@hospital.com" className="input" />
+            </Field>
+            <Field
+              label="Phone"
+              error={errors.phone ?? (PHONE_PATTERN.test(form.phone) ? undefined : PHONE_ERROR)}
+            >
+              <input value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+91 98765 43210" className="input" />
+            </Field>
           </div>
         )}
 
         {step === 1 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {packages.map((p) => {
-              const active = form.packageId === p.id;
-              return (
-                <button key={p.id} type="button" onClick={() => setForm({ ...form, packageId: p.id })}
-                  className={`text-left rounded-xl border-2 p-4 transition-all ${active ? "border-accent bg-accent/5 shadow-lift" : "border-border hover:border-accent/40"}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="font-display font-bold">{p.tier}</div>
-                    {p.popular && <span className="text-[10px] font-bold rounded-full bg-accent text-accent-foreground px-2 py-0.5">POPULAR</span>}
-                  </div>
-                  <div className="mt-2 font-display text-2xl font-bold">₹{p.monthly.toLocaleString("en-IN")}<span className="text-xs text-muted-foreground font-medium">/mo</span></div>
-                  <ul className="mt-3 space-y-1.5 text-xs">
-                    {p.features.filter(f => f.enabled).slice(0, 5).map((f) => (
-                      <li key={f.name} className="flex items-center gap-1.5"><Check className="size-3.5 text-success" /> {f.name}</li>
-                    ))}
-                  </ul>
-                  <div className="mt-3 pt-3 border-t border-border text-[11px] text-muted-foreground">
-                    Up to {p.maxDoctors} doctors · {p.maxStorageGb}GB · {p.maxBranches} branches
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Input label="Contact person" value={form.contactPerson} onChange={(v) => setForm({ ...form, contactPerson: v })} error={errors.contactPerson} />
-            <Input label="Admin email" value={form.adminEmail} onChange={(v) => setForm({ ...form, adminEmail: v })} error={errors.adminEmail} />
-            <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-border p-4 cursor-pointer">
-              <input type="checkbox" checked={form.autoPassword} onChange={(e) => setForm({ ...form, autoPassword: e.target.checked })}
-                className="size-4 accent-[oklch(0.55_0.15_160)]" />
-              <div>
-                <div className="text-sm font-semibold">Auto-generate secure password</div>
-                <div className="text-xs text-muted-foreground">A reset link will be emailed to the admin on creation.</div>
+          <div className="space-y-4">
+            {loadingPackages ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
               </div>
-            </label>
+            ) : packages.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-sm font-semibold">No packages available</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  <Link to="/admin/packages/create" className="text-accent-foreground font-semibold">Create a package</Link> first.
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {packages.map((p) => (
+                  <button key={p.id} type="button" onClick={() => setForm({ ...form, packageId: p.id })}
+                    className={`text-left rounded-xl border-2 p-4 transition-all ${
+                      form.packageId === p.id ? "border-accent bg-accent/5 shadow-lift" : "border-border hover:border-accent/40"
+                    }`}>
+                    <div className="font-display font-bold">{p.name}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{formatINR(p.monthlyPrice)}/mo</div>
+                    {p.description && <div className="text-xs text-muted-foreground mt-1">{p.description}</div>}
+                  </button>
+                ))}
+              </div>
+            )}
+            {errors.packageId && <div className="text-[11px] text-destructive">{errors.packageId}</div>}
           </div>
         )}
 
@@ -130,29 +201,30 @@ function CreateHospital() {
             className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-border text-sm font-semibold disabled:opacity-40 hover:bg-muted">
             <ArrowLeft className="size-4" /> Back
           </button>
-          {step < 2 ? (
-            <button onClick={next} className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-95">
+          {step < 1 ? (
+            <button onClick={next}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-95">
               Next <ArrowRight className="size-4" />
             </button>
           ) : (
-            <button onClick={submit} className="inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-95">
-              <Check className="size-4" /> Create Hospital
+            <button onClick={submit} disabled={submitting}
+              className="inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-95 disabled:opacity-60">
+              {submitting ? <><Loader2 className="size-4 animate-spin" /> Creating...</> : <><Check className="size-4" /> Create Hospital</>}
             </button>
           )}
         </div>
       </div>
+
+      <style>{`.input { width:100%; height:40px; border-radius:8px; border:1px solid var(--input); background:var(--background); padding:0 12px; font-size:14px; outline:none; } .input:focus { border-color: var(--accent); }`}</style>
     </div>
   );
 }
 
-function Input({ label, value, onChange, error, className = "" }: {
-  label: string; value: string; onChange: (v: string) => void; error?: string; className?: string;
-}) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
-    <label className={`block ${className}`}>
+    <label className="block">
       <div className="text-xs font-semibold mb-1.5">{label}</div>
-      <input value={value} onChange={(e) => onChange(e.target.value)}
-        className={`w-full h-10 rounded-lg border bg-background px-3 text-sm outline-none transition-colors ${error ? "border-destructive" : "border-input focus:border-accent"}`} />
+      {children}
       {error && <div className="text-[11px] text-destructive mt-1">{error}</div>}
     </label>
   );

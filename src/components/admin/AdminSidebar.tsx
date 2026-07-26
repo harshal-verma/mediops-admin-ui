@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Hospital, Package, Users, ScrollText, Settings, Stethoscope, ChevronLeft,
+  LayoutDashboard, Hospital, Package, Users, ScrollText, Stethoscope, ChevronLeft,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,6 @@ const items = [
   { to: "/admin/packages", label: "Packages", icon: Package },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function AdminSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {

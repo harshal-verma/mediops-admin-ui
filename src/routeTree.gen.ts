@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminShellRouteImport } from './routes/admin/_shell'
 import { Route as AdminShellUsersRouteImport } from './routes/admin/_shell/users'
-import { Route as AdminShellSettingsRouteImport } from './routes/admin/_shell/settings'
 import { Route as AdminShellDashboardRouteImport } from './routes/admin/_shell/dashboard'
 import { Route as AdminShellAuditLogsRouteImport } from './routes/admin/_shell/audit-logs'
 import { Route as AdminShellPackagesIndexRouteImport } from './routes/admin/_shell/packages/index'
@@ -40,11 +39,6 @@ const AdminShellRoute = AdminShellRouteImport.update({
 const AdminShellUsersRoute = AdminShellUsersRouteImport.update({
   id: '/users',
   path: '/users',
-  getParentRoute: () => AdminShellRoute,
-} as any)
-const AdminShellSettingsRoute = AdminShellSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => AdminShellRoute,
 } as any)
 const AdminShellDashboardRoute = AdminShellDashboardRouteImport.update({
@@ -92,7 +86,6 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/admin/audit-logs': typeof AdminShellAuditLogsRoute
   '/admin/dashboard': typeof AdminShellDashboardRoute
-  '/admin/settings': typeof AdminShellSettingsRoute
   '/admin/users': typeof AdminShellUsersRoute
   '/admin/hospitals/$id': typeof AdminShellHospitalsIdRoute
   '/admin/hospitals/create': typeof AdminShellHospitalsCreateRoute
@@ -106,7 +99,6 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/admin/audit-logs': typeof AdminShellAuditLogsRoute
   '/admin/dashboard': typeof AdminShellDashboardRoute
-  '/admin/settings': typeof AdminShellSettingsRoute
   '/admin/users': typeof AdminShellUsersRoute
   '/admin/hospitals/$id': typeof AdminShellHospitalsIdRoute
   '/admin/hospitals/create': typeof AdminShellHospitalsCreateRoute
@@ -121,7 +113,6 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/admin/_shell/audit-logs': typeof AdminShellAuditLogsRoute
   '/admin/_shell/dashboard': typeof AdminShellDashboardRoute
-  '/admin/_shell/settings': typeof AdminShellSettingsRoute
   '/admin/_shell/users': typeof AdminShellUsersRoute
   '/admin/_shell/hospitals/$id': typeof AdminShellHospitalsIdRoute
   '/admin/_shell/hospitals/create': typeof AdminShellHospitalsCreateRoute
@@ -137,7 +128,6 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/audit-logs'
     | '/admin/dashboard'
-    | '/admin/settings'
     | '/admin/users'
     | '/admin/hospitals/$id'
     | '/admin/hospitals/create'
@@ -151,7 +141,6 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/audit-logs'
     | '/admin/dashboard'
-    | '/admin/settings'
     | '/admin/users'
     | '/admin/hospitals/$id'
     | '/admin/hospitals/create'
@@ -165,7 +154,6 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/_shell/audit-logs'
     | '/admin/_shell/dashboard'
-    | '/admin/_shell/settings'
     | '/admin/_shell/users'
     | '/admin/_shell/hospitals/$id'
     | '/admin/_shell/hospitals/create'
@@ -208,13 +196,6 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminShellUsersRouteImport
-      parentRoute: typeof AdminShellRoute
-    }
-    '/admin/_shell/settings': {
-      id: '/admin/_shell/settings'
-      path: '/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminShellSettingsRouteImport
       parentRoute: typeof AdminShellRoute
     }
     '/admin/_shell/dashboard': {
@@ -272,7 +253,6 @@ declare module '@tanstack/react-router' {
 interface AdminShellRouteChildren {
   AdminShellAuditLogsRoute: typeof AdminShellAuditLogsRoute
   AdminShellDashboardRoute: typeof AdminShellDashboardRoute
-  AdminShellSettingsRoute: typeof AdminShellSettingsRoute
   AdminShellUsersRoute: typeof AdminShellUsersRoute
   AdminShellHospitalsIdRoute: typeof AdminShellHospitalsIdRoute
   AdminShellHospitalsCreateRoute: typeof AdminShellHospitalsCreateRoute
@@ -284,7 +264,6 @@ interface AdminShellRouteChildren {
 const AdminShellRouteChildren: AdminShellRouteChildren = {
   AdminShellAuditLogsRoute: AdminShellAuditLogsRoute,
   AdminShellDashboardRoute: AdminShellDashboardRoute,
-  AdminShellSettingsRoute: AdminShellSettingsRoute,
   AdminShellUsersRoute: AdminShellUsersRoute,
   AdminShellHospitalsIdRoute: AdminShellHospitalsIdRoute,
   AdminShellHospitalsCreateRoute: AdminShellHospitalsCreateRoute,
@@ -305,3 +284,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
