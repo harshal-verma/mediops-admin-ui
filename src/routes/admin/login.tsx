@@ -20,7 +20,6 @@ function LoginPage() {
   const { login, user, loading } = useAuth();
   const [email, setEmail] = useState("admin@his.com");
   const [password, setPassword] = useState("Admin@123");
-  const [otp, setOtp] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -107,11 +106,6 @@ function LoginPage() {
           <Field label="Password" icon={<Lock className="size-4" />} error={errors.password}>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-transparent outline-none text-sm" placeholder="••••••••" />
-          </Field>
-          <Field label="2FA code (optional)" icon={<Shield className="size-4" />} hint="Skip if not enabled">
-            <input value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              inputMode="numeric" maxLength={6}
-              className="w-full bg-transparent outline-none text-sm tracking-[0.5em] font-mono" placeholder="123456" />
           </Field>
 
           <button

@@ -232,6 +232,25 @@ export type SearchResults = {
   };
 };
 
+export type PendingActivation = {
+  id: number;
+  name: string;
+  code: string;
+  createdAt: string;
+};
+
+export type ExpiringPackage = {
+  hospitalId: number;
+  hospitalName: string;
+  endDate: string;
+  daysLeft: number;
+};
+
+export type NotificationsData = {
+  pendingActivations: PendingActivation[];
+  expiringPackages: ExpiringPackage[];
+};
+
 export type AuditLogPage = {
   data: AuditLog[];
   total: number;
@@ -255,7 +274,11 @@ export const api = {
         body: JSON.stringify({ packageId, startDate: new Date().toISOString() }),
       }),
     activate: (id: number) =>
-      apiFetch<Hospital>(`/api/hospitals/${id}/activate`, { method: "POST" }),
+      apiFetch<{
+        hospital: Hospital;
+        admin: { email: string; password?: string };
+        created: boolean;
+      }>(`/api/hospitals/${id}/activate`, { method: "POST" }),
     suspend: (id: number) =>
       apiFetch<Hospital>(`/api/hospitals/${id}/suspend`, { method: "POST" }),
     reactivate: (id: number) =>
@@ -307,6 +330,9 @@ export const api = {
   },
   search: {
     query: (q: string) => apiFetch<SearchResults>(`/api/search?q=${encodeURIComponent(q)}`),
+  },
+  notifications: {
+    get: () => apiFetch<NotificationsData>("/api/notifications"),
   },
 };
 

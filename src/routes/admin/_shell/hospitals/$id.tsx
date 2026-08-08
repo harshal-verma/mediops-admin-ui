@@ -1,9 +1,10 @@
 /* eslint-disable prettier/prettier */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Ban, CheckCircle, Loader2, PackagePlus, RefreshCw, RotateCcw } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle, CheckCircle2, Copy, Loader2, PackagePlus, RefreshCw, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api, formatINR, type Hospital, type HospitalStatus, type Package } from "@/lib/api";
 import { PlanBadge, StatusBadge } from "@/components/admin/Badges";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/_shell/hospitals/$id")({
@@ -29,6 +30,11 @@ function HospitalDetail() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
   const [assigning, setAssigning] = useState(false);
+  const [activationResult, setActivationResult] = useState<{
+    hospital: Hospital;
+    admin: { email: string; password?: string };
+    created: boolean;
+  } | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -67,6 +73,19 @@ function HospitalDetail() {
       load();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : failureMessage);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function activate() {
+    setBusy(true);
+    try {
+      const result = await api.hospitals.activate(hospitalId);
+      setActivationResult(result);
+      load();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to activate");
     } finally {
       setBusy(false);
     }
@@ -146,7 +165,7 @@ function HospitalDetail() {
         <div className="flex gap-2 flex-wrap">
           {hospital.status === "DRAFT" && (
             <button
-              onClick={() => run(api.hospitals.activate, "Hospital activated", "Failed to activate")}
+              onClick={activate}
               disabled={busy}
               className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-success text-success-foreground text-sm font-semibold disabled:opacity-60"
             >
@@ -245,6 +264,50 @@ function HospitalDetail() {
           )}
         </div>
       </div>
+
+      <Dialog open={activationResult !== null} onOpenChange={(o) => { if (!o) setActivationResult(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="size-5 text-success" />
+              Hospital Activated!
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-3">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Hospital info</div>
+              <InfoRow label="Name" value={activationResult?.hospital.name ?? ""} />
+              <div className="text-sm">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Code</div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-mono font-bold text-base">{activationResult?.hospital.code}</span>
+                  <button onClick={() => { navigator.clipboard.writeText(activationResult?.hospital.code ?? ""); toast.success("Copied!"); }}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                    <Copy className="size-3" /> Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {activationResult?.created && activationResult.admin.password ? (
+              <div className="rounded-xl border border-warning/40 bg-warning/5 p-4 space-y-3">
+                <div className="text-xs uppercase tracking-wide text-warning font-semibold">Admin credentials — save now!</div>
+                <div className="text-xs text-muted-foreground">These will not be shown again. An email has been sent to the hospital.</div>
+                <CredRow label="Email" value={activationResult.admin.email} />
+                <CredRow label="Password" value={activationResult.admin.password} mono />
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-2">Admin account already exists for this hospital.</div>
+            )}
+
+            <button onClick={() => setActivationResult(null)}
+              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-95">
+              Done
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -263,6 +326,21 @@ function Limit({ label, value }: { label: string; value: string | number }) {
     <div className="rounded-lg border border-border p-2">
       <div className="font-display font-bold text-sm">{value}</div>
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function CredRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="text-sm">
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="flex items-center gap-2 mt-0.5">
+        <span className={mono ? "font-mono text-sm" : ""}>{value}</span>
+        <button onClick={() => { navigator.clipboard.writeText(value); toast.success("Copied!"); }}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <Copy className="size-3" /> Copy
+        </button>
+      </div>
     </div>
   );
 }

@@ -12,9 +12,9 @@ export const Route = createFileRoute("/admin/_shell/hospitals/create")({
 
 const steps = ["Hospital info", "Assign package"];
 
-/** Phone is free-form, but restricted to the characters real numbers are written with. */
-const PHONE_PATTERN = /^[+\d\s\-()]*$/;
-const PHONE_ERROR = "Invalid phone number";
+/** Indian mobile number: optional +91 prefix, then 6-9 start, 10 digits total. */
+const PHONE_PATTERN = /^(\+91[\s-]?)?[6-9]\d{9}$/;
+const PHONE_ERROR = "Enter a valid 10-digit Indian mobile number";
 
 /** "Kanishka Hospital" → "KANISHKA-H". Seeds the code field; still hand-editable. */
 function autoGenerateCode(name: string): string {
@@ -65,7 +65,7 @@ function CreateHospital() {
       if (!form.name.trim()) e.name = "Hospital name required";
       if (!form.code.trim()) e.code = "Hospital code required";
       if (!/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Valid email required";
-      if (!PHONE_PATTERN.test(form.phone)) e.phone = PHONE_ERROR;
+      if (form.phone.trim() && !PHONE_PATTERN.test(form.phone.trim())) e.phone = PHONE_ERROR;
     }
     if (step === 1) {
       if (form.packageId === null) e.packageId = "Select a package";
@@ -154,13 +154,14 @@ function CreateHospital() {
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="admin@hospital.com" className="input" />
             </Field>
-            <Field
-              label="Phone"
-              error={errors.phone ?? (PHONE_PATTERN.test(form.phone) ? undefined : PHONE_ERROR)}
-            >
-              <input value={form.phone}
+            <Field label="Phone" error={errors.phone}>
+              <input
+                value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+91 98765 43210" className="input" />
+                placeholder="9876543210 or +91 9876543210"
+                className="input"
+                maxLength={13}
+              />
             </Field>
           </div>
         )}
